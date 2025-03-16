@@ -351,18 +351,33 @@ COMMIT
 1. Dodanie rezerwacji i jej anulowanie w ramach jednej transakcji
 
 ```sql
-
 SET TRANSACTION READ WRITE;
 
 INSERT INTO reservation (trip_id, person_id, status, no_tickets) VALUES (1, 3, 'N', 1);
 
 ROLLBACK;
-
 ```
+
 Zdjęcie pokazujące zmiany w bazie danych:
 
 ![0_ex_1](zad_0_przyklad_1.png)
 
+
+2. Zmiana statusu rezerwacji i zapis do loga
+
+```sql
+SET TRANSACTION READ WRITE;
+
+UPDATE reservation SET status = 'P' WHERE reservation_id = 2;
+
+INSERT INTO log (reservation_id, log_date, status, no_tickets)
+    SELECT RESERVATION_ID, SYSDATE, STATUS, NO_TICKETS FROM RESERVATION WHERE RESERVATION_ID = 2;
+
+COMMIT;
+```
+Zdjęcie pokazujące zmiany w bazie danych:
+
+![0_ex_1](zad_0_przyklad_2.png)
 
 
 ---
