@@ -359,6 +359,7 @@ INSERT INTO reservation (trip_id, person_id, status, no_tickets) VALUES (1, 3, '
 ROLLBACK;
 
 ```
+Zdjęcie pokazujące zmiany w bazie danych:
 ![0_ex_1](zad_0_przyklad_1.png)
 
 ---
