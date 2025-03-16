@@ -31,7 +31,7 @@ Imiona i nazwiska autorów : Szymon Kłodowski, Adrian Krawczyk
 
 # Tabele
 
-![](_img/ora-trip1-0.png)
+![table](ora-trip1-0.png)
 
 
 - `Trip`  - wycieczki
@@ -284,12 +284,70 @@ pomocne mogą być materiały dostępne tu:
 https://upel.agh.edu.pl/mod/folder/view.php?id=311899
 w szczególności dokument: `1_ora_modyf.pdf`
 
+### Dodanie kolumn + aktualizacja danych
 
 ```sql
 
 -- przyklady, kod, zrzuty ekranów, komentarz ...
 
+--Zmiany w tabelach Reservation i Log
+
+alter table RESERVATION
+    add no_tickets INTEGER;
+
+alter table LOG
+    add no_tickets INTEGER;
+
+
+--Modyfikacja zestawu danych
+
+SET TRANSACTION READ WRITE;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 2
+    WHERE RESERVATION_ID = 1;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 1
+    WHERE RESERVATION_ID = 2;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 3
+    WHERE RESERVATION_ID = 3;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 1
+    WHERE RESERVATION_ID = 4;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 2
+    WHERE RESERVATION_ID = 5;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 5
+    WHERE RESERVATION_ID = 6;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 1
+    WHERE RESERVATION_ID = 7;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 3
+    WHERE RESERVATION_ID = 8;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 1
+    WHERE RESERVATION_ID = 9;
+
+UPDATE RESERVATION
+    SET NO_TICKETS = 4
+    WHERE RESERVATION_ID = 10;
+
+COMMIT
+
 ```
+### Kilka eksperymentów związanych ze wstawianiem, modyfikacją i usuwaniem danych oraz wykorzystaniem transakcji
+
 
 ---
 # Zadanie 1 - widoki
