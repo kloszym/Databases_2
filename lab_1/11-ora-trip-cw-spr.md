@@ -360,6 +360,7 @@ ROLLBACK;
 
 ```
 ![0_ex_1](zad_0_przyklad_1.png)
+
 ---
 # Zadanie 1 - widoki
 
