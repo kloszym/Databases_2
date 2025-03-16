@@ -348,9 +348,9 @@ COMMIT
 ```
 ### Kilka eksperymentów związanych ze wstawianiem, modyfikacją i usuwaniem danych oraz wykorzystaniem transakcji
 
-```sql
+1. Dodanie rezerwacji i jej anulowanie w ramach jednej transakcji
 
--- 1. Dodanie rezerwacji i jej anulowanie w ramach jednej transakcji
+```sql
 
 SET TRANSACTION READ WRITE;
 
@@ -360,7 +360,10 @@ ROLLBACK;
 
 ```
 Zdjęcie pokazujące zmiany w bazie danych:
+
 ![0_ex_1](zad_0_przyklad_1.png)
+
+
 
 ---
 # Zadanie 1 - widoki
