@@ -412,14 +412,14 @@ Wysoki indeks nowej rezerwacji spowodowany jest wcześniejszą próbą dodania p
 
 ### Transkacje - co i jak
 
-&nbsp;Transakcja w bazie danych to zbiór operacji, które są wykonywane jako jedna, niepodzielna jednostka. Oznacza to, że wszystkie zmiany dokonane w ramach transakcji muszą zostać zatwierdzone (commit) lub wycofane (rollback) w przypadku błędu.
+&nbsp;&nbsp;&nbsp;&nbsp;Transakcja w bazie danych to zbiór operacji, które są wykonywane jako jedna, niepodzielna jednostka. Oznacza to, że wszystkie zmiany dokonane w ramach transakcji muszą zostać zatwierdzone (commit) lub wycofane (rollback) w przypadku błędu.
 
-&nbsp;```sql COMMIT ``` – zatwierdza wszystkie operacje wykonane w ramach transakcji, czyniąc zmiany trwałymi. Po wykonaniu COMMIT nie można już cofnąć zmian.
-&nbsp;```sql ROLLBACK ``` – cofa wszystkie operacje wykonane w bieżącej transakcji, przywracając stan bazy sprzed jej rozpoczęcia.
+&nbsp;&nbsp;&nbsp;&nbsp;```COMMIT``` – zatwierdza wszystkie operacje wykonane w ramach transakcji, czyniąc zmiany trwałymi. Po wykonaniu COMMIT nie można już cofnąć zmian.
+&nbsp;&nbsp;&nbsp;&nbsp;```ROLLBACK``` – cofa wszystkie operacje wykonane w bieżącej transakcji, przywracając stan bazy sprzed jej rozpoczęcia.
 
-&nbsp;Jeśli w trakcie wykonywania transakcji wystąpi błąd wykonuje się automatyczne wycofanie (rollback). Możemy oczywiście założyć możliwość takiego błędu, złapać go i zrobić co chcemy wtedy.
+&nbsp;&nbsp;&nbsp;&nbsp;Jeśli w trakcie wykonywania transakcji wystąpi błąd wykonuje się automatyczne wycofanie (rollback). Możemy oczywiście założyć możliwość takiego błędu, złapać go i zrobić co chcemy wtedy.
 
-&nbsp;*Oracle PL/SQL* oraz *MS Sqlserver T-SQL* mają podobne mechanizmy transakcyjne, ale różnią się składnią i sposobem zarządzania sesjami oraz błędami. Oracle domyślnie zaczyna transakcję automatycznie, podczas gdy w SQL Server trzeba ją jawnie rozpocząć.
+&nbsp;&nbsp;&nbsp;&nbsp;*Oracle PL/SQL* oraz *MS Sqlserver T-SQL* mają podobne mechanizmy transakcyjne, ale różnią się składnią i sposobem zarządzania sesjami oraz błędami. Oracle domyślnie zaczyna transakcję automatycznie, podczas gdy w SQL Server trzeba ją jawnie rozpocząć.
 
 ---
 # Zadanie 1 - widoki
