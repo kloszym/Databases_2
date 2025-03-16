@@ -348,7 +348,7 @@ COMMIT
 ```
 ### Kilka eksperymentów związanych ze wstawianiem, modyfikacją i usuwaniem danych oraz wykorzystaniem transakcji
 
-1. Dodanie rezerwacji i jej anulowanie w ramach jednej transakcji
+**1. Dodanie rezerwacji i jej anulowanie w ramach jednej transakcji**
 
 ```sql
 SET TRANSACTION READ WRITE;
@@ -363,7 +363,7 @@ Zdjęcie pokazujące zmiany w bazie danych:
 ![0_ex_1](zad_0_przyklad_1.png)
 
 
-2. Zmiana statusu rezerwacji i zapis do loga
+**2. Zmiana statusu rezerwacji i zapis do loga**
 
 ```sql
 SET TRANSACTION READ WRITE;
@@ -377,8 +377,38 @@ COMMIT;
 ```
 Zdjęcie pokazujące zmiany w bazie danych:
 
-![0_ex_1](zad_0_przyklad_2.png)
+![0_ex_2](zad_0_przyklad_2.png)
 
+
+**3. Przykład wycofania transakcji w przypadku błędu (próba dodania więcej biletów niż dostępnych miejsc)**
+
+```sql
+
+SET TRANSACTION READ WRITE;
+
+DECLARE
+    v_max_places INT;
+    v_reserved INT;
+    v_number_of_tickets INT;
+
+BEGIN
+    v_number_of_tickets := 2;
+    SELECT max_no_places INTO v_max_places FROM trip WHERE trip_id = 1;
+    SELECT COALESCE(SUM(no_tickets), 0) INTO v_reserved FROM reservation WHERE trip_id = 1 AND status != 'C';
+
+    IF v_reserved + v_number_of_tickets > v_max_places THEN
+        ROLLBACK;
+    ELSE
+        INSERT INTO reservation (trip_id, person_id, status, no_tickets) VALUES (1, 5, 'N', v_number_of_tickets);
+        COMMIT;
+    END IF;
+END;
+
+```
+Zdjęcie pokazujące zmiany w bazie danych:
+
+![0_ex_3](zad_0_przyklad_2.png)
+Wysoki indeks nowej rezerwacji spowodowany jest wcześniejszą próbą dodania przykładowych danych do tabeli, które się zdublowały niestety
 
 ---
 # Zadanie 1 - widoki
