@@ -181,49 +181,84 @@ W razie potrzeby należy zmodyfikować dane tak żeby przetestować różne przy
 
 ```sql
 -- trip
-insert into trip(trip_name, country, trip_date, max_no_places)  
-values ('Wycieczka do Paryza', 'Francja', to_date('2023-09-12', 'YYYY-MM-DD'), 3);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
-values ('Piekny Krakow', 'Polska', to_date('2025-05-03','YYYY-MM-DD'), 2);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
-values ('Znow do Francji', 'Francja', to_date('2025-05-01','YYYY-MM-DD'), 2);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
+insert into trip(trip_name, country, trip_date, max_no_places)
+values ('Wycieczka do Paryza', 'Francja', to_date('2023-09-12', 'YYYY-MM-DD'), 5);
+
+insert into trip(trip_name, country, trip_date,  max_no_places)
+values ('Piekny Krakow', 'Polska', to_date('2025-05-03','YYYY-MM-DD'), 3);
+
+insert into trip(trip_name, country, trip_date,  max_no_places)
+values ('Znow do Francji', 'Francja', to_date('2025-05-01','YYYY-MM-DD'), 2);
+
+insert into trip(trip_name, country, trip_date,  max_no_places)
 values ('Hel', 'Polska', to_date('2025-05-01','YYYY-MM-DD'),  2);
 
 -- person
-insert into person(firstname, lastname)  
-values ('Jan', 'Nowak');  
-  
-insert into person(firstname, lastname)  
-values ('Jan', 'Kowalski');  
-  
-insert into person(firstname, lastname)  
-values ('Jan', 'Nowakowski');  
-  
-insert into person(firstname, lastname)  
+insert into person(firstname, lastname)
+values ('Jan', 'Nowak');
+
+insert into person(firstname, lastname)
+values ('Jan', 'Kowalski');
+
+insert into person(firstname, lastname)
+values ('Jan', 'Nowakowski');
+
+insert into person(firstname, lastname)
 values  ('Novak', 'Nowak');
+
+insert into person(firstname, lastname)
+values ('Adrian', 'Nowak');
+
+insert into person(firstname, lastname)
+values ('Adrian', 'Kowalski');
+
+insert into person(firstname, lastname)
+values ('Adrian', 'Nowakowski');
+
+insert into person(firstname, lastname)
+values  ('Szymon', 'Nowak');
+
+insert into person(firstname, lastname)
+values ('Szymon', 'Nowakowski');
+
+insert into person(firstname, lastname)
+values ('Szymon', 'Kowalski');
 
 -- reservation
 -- trip1
-insert  into reservation(trip_id, person_id, status)  
-values (1, 1, 'P');  
-  
-insert into reservation(trip_id, person_id, status)  
-values (1, 2, 'N');  
-  
--- trip 2  
-insert into reservation(trip_id, person_id, status)  
-values (2, 1, 'P');  
-  
-insert into reservation(trip_id, person_id, status)  
-values (2, 4, 'C');  
-  
--- trip 3  
-insert into reservation(trip_id, person_id, status)  
+insert  into reservation(trip_id, person_id, status)
+values (1, 1, 'P');
+
+insert into reservation(trip_id, person_id, status)
+values (1, 2, 'N');
+
+insert into reservation(trip_id, person_id, status)
+values (1, 3, 'C');
+
+-- trip 2
+insert into reservation(trip_id, person_id, status)
 values (2, 4, 'P');
+
+insert into reservation(trip_id, person_id, status)
+values (2, 5, 'C');
+
+insert into reservation(trip_id, person_id, status)
+values (2, 6, 'N');
+
+-- trip 3
+insert into reservation(trip_id, person_id, status)
+values (3, 7, 'P');
+
+insert into reservation(trip_id, person_id, status)
+values (3, 8, 'C');
+
+
+-- trip 4
+insert into reservation(trip_id, person_id, status)
+values (2, 4, 'P');
+
+insert into reservation(trip_id, person_id, status)
+values (2, 4, 'N');
 ```
 
 proszę pamiętać o zatwierdzeniu transakcji
