@@ -444,14 +444,23 @@ Proponowany zestaw widoków można rozbudować wedle uznania/potrzeb
 
 # Zadanie 1  - rozwiązanie
 
+**Dla ```vw_reservation```:
 ```sql
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+create view vw_reservation
+as
+       SELECT reservation_id, country, trip_date, trip_name, firstname, lastname, status, t.trip_id, p.person_id, no_tickets
+       FROM TRIP t
+       JOIN RESERVATION r ON t.TRIP_ID = r.TRIP_ID
+       JOIN PERSON p ON r.PERSON_ID = p.PERSON_ID
+       ORDER BY reservation_id, t.trip_id;
 
-
+commit;
 
 ```
+A rezultatem uruchomienia tego widoku jest:
 
+![1_ex_1](zad_1_przyklad_1.png)
 
 
 ---
