@@ -444,7 +444,7 @@ Proponowany zestaw widoków można rozbudować wedle uznania/potrzeb
 
 # Zadanie 1  - rozwiązanie
 
-**Dla ```vw_reservation```:
+**Dla ```vw_reservation```**:
 ```sql
 
 create view vw_reservation
@@ -462,6 +462,27 @@ A rezultatem uruchomienia tego widoku jest:
 
 ![1_ex_1](zad_1_przyklad_1.png)
 
+**Dla ```vw_trip```:**
+```sql
+create view vw_trip
+as
+    SELECT UNIQUE t.trip_id, country, trip_date, trip_name, max_no_places, (max_no_places - NVL(SUM(r.no_tickets), 0)) as no_available_places
+    FROM trip t
+    LEFT JOIN reservation r ON t.trip_id = r.trip_id AND status != 'C'
+    GROUP BY t.trip_id, country, trip_date, trip_name, max_no_places, max_no_places;
+    
+commit;
+```
+A rezultatem uruchomienia tego widoku jest:
+
+![1_ex_2](zad_1_przyklad_2.png)
+
+**Dla ```vw_trip```:**
+```sql
+```
+A rezultatem uruchomienia tego widoku jest:
+
+![1_ex_3](zad_1_przyklad_3.png)
 
 ---
 # Zadanie 2  - funkcje
