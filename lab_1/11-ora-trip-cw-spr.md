@@ -477,8 +477,15 @@ A rezultatem uruchomienia tego widoku jest:
 
 ![1_ex_2](zad_1_przyklad_2.png)
 
-**Dla ```vw_trip```:**
+**Dla ```vw_available_trip```:**
 ```sql
+create view vw_available_trip
+as
+    SELECT *
+    FROM vw_trip
+    WHERE no_available_places > 0;
+    
+commit;
 ```
 A rezultatem uruchomienia tego widoku jest:
 
