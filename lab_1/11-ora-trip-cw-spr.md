@@ -11,23 +11,6 @@ widoki, funkcje, procedury, triggery
 Imiona i nazwiska autorów : Szymon Kłodowski, Adrian Krawczyk
 
 ---
-<style>
-  {
-    font-size: 16pt;
-  }
-</style> 
-
-<style scoped>
- li, p {
-    font-size: 14pt;
-  }
-</style> 
-
-<style scoped>
- pre {
-    font-size: 10pt;
-  }
-</style> 
 
 # Tabele
 
@@ -521,13 +504,82 @@ Proponowany zestaw funkcji można rozbudować wedle uznania/potrzeb
 
 # Zadanie 2  - rozwiązanie
 
+**f_trip_participants**
+
 ```sql
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+create or replace function f_trip_participants(trip_id int)
+    return persons_on_trip_table
+as
+    result persons_on_trip_table;
+begin
+
+    SELECT person_on_trip(res.firstname, res.lastname)
+    bulk collect
+    into result
+    from vw_reservation res
+    where res.trip_id = f_trip_participants.trip_id and res.status != 'C';
+
+    return result;
+end;
+/
+
+```
+A rezultatem uruchomienia tej funkcji dla trip_id = 1 jest:
+
+![2_ex_1](zad_2_przyklad_1.png)
+
+**f_person_reservations**
+
+```sql
+
+create or replace function f_person_reservations(person_id int)
+    return trips_table
+as
+    result trips_table;
+begin
+
+    SELECT trip_object(res.TRIP_ID, res.TRIP_NAME)
+    bulk collect
+    into result
+    from vw_reservation res
+    where res.PERSON_ID = f_person_reservations.person_id and res.status != 'C';
+
+    return result;
+end;
+/
 
 ```
 
+A rezultatem uruchomienia tej funkcji dla person_id = 1 jest:
 
+![2_ex_2](zad_2_przyklad_2.png)
+
+**f_available_trips_to**
+
+```sql
+
+create or replace function f_available_trips_to(country varchar2, date_from date, date_to date)
+    return trips_table
+as
+    result trips_table;
+begin
+
+    SELECT trip_object(avt.TRIP_ID, avt.TRIP_NAME)
+    bulk collect
+    into result
+    from vw_available_trip avt
+    where (avt.COUNTRY = f_available_trips_to.country) and (avt.TRIP_DATE BETWEEN f_available_trips_to.date_from and f_available_trips_to.date_to);
+
+    return result;
+end;
+/
+
+```
+
+A rezultatem uruchomienia tej funkcji dla country = 'Polska', date_from = 01-01-2025, date_to = 01-01-2026 jest:
+
+![2_ex_3](zad_2_przyklad_3.png)
 ---
 # Zadanie 3  - procedury
 
