@@ -1288,11 +1288,237 @@ Należy przygotować procedury: `p_add_reservation_5`, `p_modify_reservation_sta
 
 # Zadanie 5  - rozwiązanie
 
+Triggerry:
+
+**trg_check_available_places_insert**
+
 ```sql
+CREATE OR REPLACE TRIGGER trg_check_available_places_insert
+BEFORE INSERT ON reservation
+FOR EACH ROW
+DECLARE
+v_trip_date trip.trip_date%TYPE;
+v_max_places trip.max_no_places%TYPE;
+v_reserved_places NUMBER;
+v_available_places NUMBER;
+BEGIN
+-- Pobranie informacji o wycieczce
+SELECT trip_date, max_no_places
+INTO v_trip_date, v_max_places
+FROM trip
+WHERE trip_id = :new.trip_id;
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+-- Sprawdzenie czy wycieczka już się nie odbyła
+IF v_trip_date < SYSDATE THEN
+RAISE_APPLICATION_ERROR(-20002, 'Nie można zarezerwować miejsca na wycieczkę, która już się odbyła.');
+END IF;
 
+-- Jeśli rezerwacja jest aktywna (status N lub P), sprawdzamy dostępność miejsc
+IF :new.status IN ('N', 'P') THEN
+-- Obliczenie liczby zarezerwowanych miejsc
+SELECT NVL(SUM(no_tickets), 0)
+INTO v_reserved_places
+FROM reservation
+WHERE trip_id = :new.trip_id
+AND status IN ('N', 'P');
+
+-- Obliczenie dostępnych miejsc
+v_available_places := v_max_places - v_reserved_places;
+
+-- Sprawdzenie czy są dostępne miejsca
+IF v_available_places < :new.no_tickets THEN
+RAISE_APPLICATION_ERROR(-20003, 'Brak wystarczającej liczby miejsc na wycieczce.');
+END IF;
+END IF;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+RAISE_APPLICATION_ERROR(-20004, 'Nie znaleziono wycieczki o podanym ID.');
+END;
+/
 ```
+
+**trg_check_available_places_update**
+
+```sql
+-- Trigger do kontroli dostępności miejsc przy zmianie statusu lub liczby biletów
+CREATE OR REPLACE TRIGGER trg_check_available_places_update
+BEFORE UPDATE OF status, no_tickets ON reservation
+FOR EACH ROW
+DECLARE
+v_trip_date trip.trip_date%TYPE;
+v_max_places trip.max_no_places%TYPE;
+v_reserved_places NUMBER;
+v_available_places NUMBER;
+v_ticket_diff NUMBER := 0;
+BEGIN
+-- Pobranie informacji o wycieczce
+SELECT trip_date, max_no_places
+INTO v_trip_date, v_max_places
+FROM trip
+WHERE trip_id = :new.trip_id;
+
+-- Jeśli zmieniamy status z anulowanego (C) na aktywny (N lub P)
+IF :old.status = 'C' AND :new.status IN ('N', 'P') THEN
+-- Obliczenie liczby zarezerwowanych miejsc (bez uwzględniania tej rezerwacji)
+SELECT NVL(SUM(no_tickets), 0)
+INTO v_reserved_places
+FROM reservation
+WHERE trip_id = :new.trip_id
+AND status IN ('N', 'P')
+AND reservation_id != :new.reservation_id;
+
+-- Obliczenie dostępnych miejsc
+v_available_places := v_max_places - v_reserved_places;
+
+-- Sprawdzenie czy są dostępne miejsca
+IF v_available_places < :new.no_tickets THEN
+RAISE_APPLICATION_ERROR(-20003, 'Brak wystarczającej liczby miejsc na wycieczce.');
+END IF;
+END IF;
+
+-- Jeśli zmieniamy liczbę biletów i rezerwacja jest aktywna
+IF :old.no_tickets != :new.no_tickets AND :new.status IN ('N', 'P') THEN
+-- Obliczenie różnicy w liczbie biletów
+v_ticket_diff := :new.no_tickets - :old.no_tickets;
+
+-- Jeśli zwiększamy liczbę biletów
+IF v_ticket_diff > 0 THEN
+-- Obliczenie liczby zarezerwowanych miejsc (bez uwzględniania tej rezerwacji)
+SELECT NVL(SUM(no_tickets), 0)
+INTO v_reserved_places
+FROM reservation
+WHERE trip_id = :new.trip_id
+AND status IN ('N', 'P')
+AND reservation_id != :new.reservation_id;
+
+-- Obliczenie dostępnych miejsc
+v_available_places := v_max_places - v_reserved_places - :old.no_tickets;
+
+-- Sprawdzenie czy są dostępne miejsca
+IF v_available_places < v_ticket_diff THEN
+RAISE_APPLICATION_ERROR(-20003, 'Brak wystarczającej liczby miejsc na wycieczce.');
+END IF;
+END IF;
+END IF;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+RAISE_APPLICATION_ERROR(-20004, 'Nie znaleziono wycieczki o podanym ID.');
+END;
+/
+```
+
+**p_add_reservation_5**
+
+```sql
+-- Zmodyfikowana procedura dodawania rezerwacji (wersja 5)
+CREATE OR REPLACE PROCEDURE p_add_reservation_5(
+p_trip_id IN trip.trip_id%TYPE,
+p_person_id IN person.person_id%TYPE,
+p_no_tickets IN reservation.no_tickets%TYPE
+)
+AS
+BEGIN
+-- Sprawdzenie czy osoba istnieje
+DECLARE
+v_person_exists NUMBER;
+BEGIN
+SELECT COUNT(*)
+INTO v_person_exists
+FROM person
+WHERE person_id = p_person_id;
+
+IF v_person_exists = 0 THEN
+RAISE_APPLICATION_ERROR(-20007, 'Nie znaleziono osoby o podanym ID.');
+END IF;
+END;
+
+-- Dodanie rezerwacji - kontrolę dostępności miejsc obsługuje trigger
+INSERT INTO reservation(trip_id, person_id, status, no_tickets)
+VALUES (p_trip_id, p_person_id, 'N', p_no_tickets);
+
+COMMIT;
+EXCEPTION
+WHEN OTHERS THEN
+ROLLBACK;
+RAISE;
+END;
+/
+```
+```sql
+-- Zmodyfikowana procedura zmiany statusu rezerwacji (wersja 5)
+CREATE OR REPLACE PROCEDURE p_modify_reservation_status_5(
+p_reservation_id IN reservation.reservation_id%TYPE,
+p_status IN reservation.status%TYPE
+)
+AS
+v_exists NUMBER;
+BEGIN
+-- Sprawdzenie czy rezerwacja istnieje
+SELECT COUNT(*)
+INTO v_exists
+FROM reservation
+WHERE reservation_id = p_reservation_id;
+
+IF v_exists = 0 THEN
+RAISE_APPLICATION_ERROR(-20005, 'Nie znaleziono rezerwacji o podanym ID.');
+END IF;
+
+-- Aktualizacja statusu rezerwacji - kontrolę dostępności miejsc obsługuje trigger
+UPDATE reservation
+SET status = p_status
+WHERE reservation_id = p_reservation_id;
+
+COMMIT;
+EXCEPTION
+WHEN OTHERS THEN
+ROLLBACK;
+RAISE;
+END;
+/
+```
+
+**p_modify_reservation_5**
+
+```sql
+-- Zmodyfikowana procedura zmiany liczby biletów (wersja 5)
+CREATE OR REPLACE PROCEDURE p_modify_reservation_5(
+p_reservation_id IN reservation.reservation_id%TYPE,
+p_no_tickets IN reservation.no_tickets%TYPE
+)
+AS
+v_exists NUMBER;
+v_status reservation.status%TYPE;
+BEGIN
+-- Sprawdzenie czy rezerwacja istnieje i pobranie jej statusu
+SELECT COUNT(*), MAX(status)
+INTO v_exists, v_status
+FROM reservation
+WHERE reservation_id = p_reservation_id;
+
+IF v_exists = 0 THEN
+RAISE_APPLICATION_ERROR(-20005, 'Nie znaleziono rezerwacji o podanym ID.');
+END IF;
+
+-- Sprawdzenie czy rezerwacja nie jest anulowana
+IF v_status = 'C' THEN
+RAISE_APPLICATION_ERROR(-20006, 'Nie można modyfikować anulowanej rezerwacji.');
+END IF;
+
+-- Aktualizacja liczby biletów - kontrolę dostępności miejsc obsługuje trigger
+UPDATE reservation
+SET no_tickets = p_no_tickets
+WHERE reservation_id = p_reservation_id;
+
+COMMIT;
+EXCEPTION
+WHEN OTHERS THEN
+ROLLBACK;
+RAISE;
+END;
+/
+```
+
+Tutaj wydaje nam się, iż dodanie zdjęć pokazujących zmiany w tabelach po wykonaniu procedur jest zbędne bo pokazaliśmy te same zdjęcia już dwa razy wcześniej.
 
 ---
 # Zadanie 6
@@ -1322,13 +1548,105 @@ alter table trip add
 
 # Zadanie 6  - rozwiązanie
 
+Procedura przeliczająca wartość no_available_places dla wszystkich wycieczek:
+
 ```sql
+CREATE OR REPLACE PROCEDURE p_calculate_available_places
+AS
+BEGIN
+-- Dla każdej wycieczki:
+-- 1. Obliczamy liczbę zarezerwowanych miejsc (z rezerwacji o statusie N lub P)
+-- 2. Aktualizujemy pole no_available_places = max_no_places - zarezerwowane miejsca
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+UPDATE trip t
+SET no_available_places = (
+SELECT t.max_no_places - NVL(SUM(r.no_tickets), 0)
+FROM reservation r
+WHERE r.trip_id = t.trip_id
+AND r.status IN ('N', 'P')
+)
+WHERE t.trip_id IS NOT NULL;
 
+COMMIT;
+
+-- Wyświetlenie potwierdzenia
+DBMS_OUTPUT.PUT_LINE('Zaktualizowano liczbę dostępnych miejsc dla wszystkich wycieczek.');
+EXCEPTION
+WHEN OTHERS THEN
+ROLLBACK;
+DBMS_OUTPUT.PUT_LINE('Wystąpił błąd: ' || SQLERRM);
+RAISE;
+END;
+/
 ```
 
+Procedura sprawdzająca poprawność wartości no_available_places:
 
+```sql
+CREATE OR REPLACE PROCEDURE p_verify_available_places AS
+    v_error_count NUMBER := 0;
+    v_calculated NUMBER;
+    v_stored NUMBER;
+    CURSOR c_trips IS
+        SELECT trip_id, max_no_places, no_available_places
+        FROM trip;
+BEGIN
+    FOR trip_rec IN c_trips LOOP
+        -- Obliczenie poprawnej wartości no_available_places
+        SELECT trip_rec.max_no_places - NVL(SUM(r.no_tickets), 0)
+        INTO v_calculated
+        FROM reservation r
+        WHERE r.trip_id = trip_rec.trip_id
+        AND r.status IN ('N', 'P')
+        GROUP BY trip_rec.max_no_places;
+
+        v_stored := trip_rec.no_available_places;
+
+        -- Sprawdzenie czy wartości się zgadzają
+        IF v_calculated != v_stored THEN
+            v_error_count := v_error_count + 1;
+        END IF;
+    END LOOP;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+```
+Aktualizacja widoku vw_trip i vw_available_trip dla zadania 6:
+
+
+```sql
+CREATE OR REPLACE VIEW vw_trip_6 AS
+SELECT
+trip_id,
+country,
+trip_date,
+trip_name,
+max_no_places,
+no_available_places
+FROM
+trip;
+```
+```sql
+CREATE OR REPLACE VIEW vw_available_trip_6 AS
+SELECT
+trip_id,
+country,
+trip_date,
+trip_name,
+max_no_places,
+no_available_places
+FROM
+trip
+WHERE
+trip_date > SYSDATE
+AND no_available_places > 0;
+```
+
+Nowy wygląd tabeli ```TRIPS``` po dodaniu kolumny ```no_available_places``` :
+![6_ex_1](zad_6_przyklad_1.png)
 
 ---
 # Zadanie 6a  - procedury
@@ -1349,13 +1667,244 @@ Należy stworzyć nowe wersje tych widoków/procedur/triggerów (np. dodając do
 
 # Zadanie 6a  - rozwiązanie
 
+**p_add_reservation_6a**
+
 ```sql
+CREATE OR REPLACE PROCEDURE p_add_reservation_6a(
+    p_trip_id IN trip.trip_id%TYPE,
+    p_person_id IN person.person_id%TYPE,
+    p_no_tickets IN reservation.no_tickets%TYPE
+) AS
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+BEGIN
+    -- Sprawdzenie czy wycieczka istnieje
+    SELECT trip_date, no_available_places INTO v_trip_date, v_available_places
+    FROM trip
+    WHERE trip_id = p_trip_id;
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+    -- Sprawdzenie czy wycieczka się nie odbyła
+    IF v_trip_date < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Nie można dodać rezerwacji na wycieczkę, która już się odbyła');
+    END IF;
 
+    -- Sprawdzenie czy są dostępne miejsca
+    IF v_available_places < p_no_tickets THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+    END IF;
+
+    -- Dodanie rezerwacji
+    INSERT INTO reservation(trip_id, person_id, status, no_tickets)
+    VALUES (p_trip_id, p_person_id, 'N', p_no_tickets);
+
+    -- Aktualizacja liczby dostępnych miejsc
+    UPDATE trip
+    SET no_available_places = no_available_places - p_no_tickets
+    WHERE trip_id = p_trip_id;
+
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (s_reservation_seq.currval, SYSDATE, 'N', p_no_tickets);
+
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Wycieczka o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
 ```
 
+**p_modify_reservation_status_6a**
 
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_reservation_status_6a(
+    p_reservation_id IN reservation.reservation_id%TYPE,
+    p_status IN reservation.status%TYPE
+) AS
+    v_current_status reservation.status%TYPE;
+    v_trip_id trip.trip_id%TYPE;
+    v_no_tickets reservation.no_tickets%TYPE;
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+BEGIN
+    -- Pobranie bieżących danych rezerwacji
+    SELECT r.status, r.trip_id, r.no_tickets, t.trip_date, t.no_available_places
+    INTO v_current_status, v_trip_id, v_no_tickets, v_trip_date, v_available_places
+    FROM reservation r
+    JOIN trip t ON r.trip_id = t.trip_id
+    WHERE r.reservation_id = p_reservation_id;
+
+    -- Sprawdzenie czy można zmienić status
+    IF v_current_status = p_status THEN
+        RETURN; -- Nic się nie zmienia, wyjście z procedury
+    END IF;
+
+    -- Jeśli próbujemy zmienić status z anulowanego (C) na inny
+    IF v_current_status = 'C' AND (p_status = 'N' OR p_status = 'P') THEN
+        -- Sprawdzenie czy wycieczka się nie odbyła
+        IF v_trip_date < SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Nie można przywrócić rezerwacji na wycieczkę, która już się odbyła');
+        END IF;
+
+        -- Sprawdzenie czy są dostępne miejsca
+        IF v_available_places < v_no_tickets THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+        END IF;
+
+        -- Aktualizacja liczby dostępnych miejsc
+        UPDATE trip
+        SET no_available_places = no_available_places - v_no_tickets
+        WHERE trip_id = v_trip_id;
+    END IF;
+
+    -- Jeśli zmieniamy status na anulowany (C)
+    IF p_status = 'C' AND v_current_status != 'C' THEN
+        -- Zwiększenie liczby dostępnych miejsc
+        UPDATE trip
+        SET no_available_places = no_available_places + v_no_tickets
+        WHERE trip_id = v_trip_id;
+    END IF;
+
+    -- Aktualizacja statusu rezerwacji
+    UPDATE reservation
+    SET status = p_status
+    WHERE reservation_id = p_reservation_id;
+
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (p_reservation_id, SYSDATE, p_status, v_no_tickets);
+
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Rezerwacja o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+**p_modify_reservation_6a**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_reservation_6a(
+    p_reservation_id IN reservation.reservation_id%TYPE,
+    p_no_tickets IN reservation.no_tickets%TYPE
+) AS
+    v_current_no_tickets reservation.no_tickets%TYPE;
+    v_status reservation.status%TYPE;
+    v_trip_id trip.trip_id%TYPE;
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+    v_tickets_diff INT;
+BEGIN
+    -- Pobranie bieżących danych rezerwacji
+    SELECT r.no_tickets, r.status, r.trip_id, t.trip_date, t.no_available_places
+    INTO v_current_no_tickets, v_status, v_trip_id, v_trip_date, v_available_places
+    FROM reservation r
+    JOIN trip t ON r.trip_id = t.trip_id
+    WHERE r.reservation_id = p_reservation_id;
+
+    -- Obliczenie różnicy w liczbie biletów
+    v_tickets_diff := p_no_tickets - v_current_no_tickets;
+
+    -- Sprawdzenie czy rezerwacja nie jest anulowana
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Nie można modyfikować anulowanej rezerwacji');
+    END IF;
+
+    -- Sprawdzenie czy wycieczka się nie odbyła
+    IF v_trip_date < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Nie można modyfikować rezerwacji na wycieczkę, która już się odbyła');
+    END IF;
+
+    -- Jeśli zwiększamy liczbę biletów, sprawdzamy dostępność
+    IF v_tickets_diff > 0 AND v_available_places < v_tickets_diff THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+    END IF;
+
+    -- Aktualizacja liczby biletów
+    UPDATE reservation
+    SET no_tickets = p_no_tickets
+    WHERE reservation_id = p_reservation_id;
+
+    -- Aktualizacja liczby dostępnych miejsc
+    UPDATE trip
+    SET no_available_places = no_available_places - v_tickets_diff
+    WHERE trip_id = v_trip_id;
+
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (p_reservation_id, SYSDATE, v_status, p_no_tickets);
+
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Rezerwacja o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+**p_modify_max_no_places_6a**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_max_no_places_6a(
+    p_trip_id IN trip.trip_id%TYPE,
+    p_max_no_places IN trip.max_no_places%TYPE
+) AS
+    v_current_max_no_places trip.max_no_places%TYPE;
+    v_current_available_places trip.no_available_places%TYPE;
+    v_reserved_places INT;
+BEGIN
+    -- Pobranie bieżących danych wycieczki
+    SELECT max_no_places, no_available_places
+    INTO v_current_max_no_places, v_current_available_places
+    FROM trip
+    WHERE trip_id = p_trip_id;
+
+    -- Obliczenie liczby zarezerwowanych miejsc
+    v_reserved_places := v_current_max_no_places - v_current_available_places;
+
+    -- Sprawdzenie czy nowa liczba miejsc nie jest mniejsza od liczby zarezerwowanych
+    IF p_max_no_places < v_reserved_places THEN
+        RAISE_APPLICATION_ERROR(-20005, 'Nie można zmniejszyć liczby miejsc poniżej liczby zarezerwowanych miejsc');
+    END IF;
+
+    -- Aktualizacja maksymalnej liczby miejsc
+    UPDATE trip
+    SET max_no_places = p_max_no_places,
+        no_available_places = p_max_no_places - v_reserved_places
+    WHERE trip_id = p_trip_id;
+
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Wycieczka o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+Prykład dodania nowej rezerwacji:
+![6a_ex_1](zad_6a_przyklad_1.png)
+
+Przykład zmienienia liczby biletów dla tej rezerwacji:
+![6a_ex_2](zad_6a_przyklad_2.png)
+
+Przykład zmienienia statusu dla tej rezerwacji:
+![6a_ex_3](zad_6a_przyklad_3.png)
+
+Przykład zmiany ilości miejsc dla wycieczki:
+![6a_ex_4](zad_6a_przyklad_4.png)
 
 ---
 # Zadanie 6b -  triggery
@@ -1375,13 +1924,308 @@ Należy stworzyć nowe wersje tych widoków/procedur/triggerów (np. dodając do
 
 # Zadanie 6b  - rozwiązanie
 
+Triggery:
+
+**trg_reservation_insert_6b**
 
 ```sql
-
--- wyniki, kod, zrzuty ekranów, komentarz ...
-
+-- Trigger aktualizujący liczbę dostępnych miejsc po dodaniu rezerwacji
+CREATE OR REPLACE TRIGGER trg_reservation_insert_6b
+AFTER INSERT ON reservation
+FOR EACH ROW
+BEGIN
+    -- Aktualizacja liczby dostępnych miejsc
+    IF :NEW.status != 'C' THEN
+        UPDATE trip
+        SET no_available_places = no_available_places - :NEW.no_tickets
+        WHERE trip_id = :NEW.trip_id;
+    END IF;
+END;
+/
 ```
 
+**trg_reservation_update_status_6b**
+
+```sql
+-- Trigger aktualizujący liczbę dostępnych miejsc po zmianie statusu rezerwacji
+CREATE OR REPLACE TRIGGER trg_reservation_update_status_6b
+AFTER UPDATE OF status ON reservation
+FOR EACH ROW
+BEGIN
+    -- Jeśli zmiana statusu na anulowany (C)
+    IF :NEW.status = 'C' AND :OLD.status != 'C' THEN
+        UPDATE trip
+        SET no_available_places = no_available_places + :NEW.no_tickets
+        WHERE trip_id = :NEW.trip_id;
+    -- Jeśli zmiana statusu z anulowanego (C) na inny
+    ELSIF :OLD.status = 'C' AND :NEW.status != 'C' THEN
+        UPDATE trip
+        SET no_available_places = no_available_places - :NEW.no_tickets
+        WHERE trip_id = :NEW.trip_id;
+    END IF;
+END;
+/
+```
+
+**trg_reservation_update_tickets_6b**
+
+```sql
+-- Trigger aktualizujący liczbę dostępnych miejsc po zmianie liczby biletów
+CREATE OR REPLACE TRIGGER trg_reservation_update_tickets_6b
+AFTER UPDATE OF no_tickets ON reservation
+FOR EACH ROW
+WHEN (OLD.no_tickets != NEW.no_tickets)
+BEGIN
+    -- Tylko dla aktywnych rezerwacji
+    IF :NEW.status != 'C' THEN
+        UPDATE trip
+        SET no_available_places = no_available_places - (:NEW.no_tickets - :OLD.no_tickets)
+        WHERE trip_id = :NEW.trip_id;
+    END IF;
+END;
+/
+```
+
+**trg_reservation_delete_6b**
+
+```sql
+-- Trigger kontrolujący usuwanie rezerwacji (jeśli dozwolone)
+CREATE OR REPLACE TRIGGER trg_reservation_delete_6b
+BEFORE DELETE ON reservation
+FOR EACH ROW
+BEGIN
+    -- Aktualizacja liczby dostępnych miejsc jeśli rezerwacja nie była anulowana
+    IF :OLD.status != 'C' THEN
+        UPDATE trip
+        SET no_available_places = no_available_places + :OLD.no_tickets
+        WHERE trip_id = :OLD.trip_id;
+    END IF;
+END;
+/
+```
+
+**trg_trip_update_max_places_6b**
+
+```sql
+-- Trigger kontrolujący zmianę max_no_places
+CREATE OR REPLACE TRIGGER trg_trip_update_max_places_6b
+BEFORE UPDATE OF max_no_places ON trip
+FOR EACH ROW
+DECLARE
+    v_reserved_places INT;
+BEGIN
+    -- Obliczenie liczby zarezerwowanych miejsc
+    v_reserved_places := :OLD.max_no_places - :OLD.no_available_places;
+    
+    -- Sprawdzenie czy nowa liczba miejsc nie jest mniejsza od liczby zarezerwowanych
+    IF :NEW.max_no_places < v_reserved_places THEN
+        RAISE_APPLICATION_ERROR(-20005, 'Nie można zmniejszyć liczby miejsc poniżej liczby zarezerwowanych miejsc');
+    END IF;
+    
+    -- Aktualizacja liczby dostępnych miejsc
+    :NEW.no_available_places := :NEW.max_no_places - v_reserved_places;
+END;
+/
+```
+Procedury:
+
+**p_add_reservation_6b**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_add_reservation_6b(
+    p_trip_id IN trip.trip_id%TYPE,
+    p_person_id IN person.person_id%TYPE,
+    p_no_tickets IN reservation.no_tickets%TYPE
+) AS
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+BEGIN
+    -- Sprawdzenie czy wycieczka istnieje
+    SELECT trip_date, no_available_places INTO v_trip_date, v_available_places
+    FROM trip
+    WHERE trip_id = p_trip_id;
+    
+    -- Sprawdzenie czy wycieczka się nie odbyła
+    IF v_trip_date < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Nie można dodać rezerwacji na wycieczkę, która już się odbyła');
+    END IF;
+    
+    -- Sprawdzenie czy są dostępne miejsca
+    IF v_available_places < p_no_tickets THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+    END IF;
+    
+    -- Dodanie rezerwacji (triggery zajmą się aktualizacją no_available_places)
+    INSERT INTO reservation(trip_id, person_id, status, no_tickets)
+    VALUES (p_trip_id, p_person_id, 'N', p_no_tickets);
+    
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (s_reservation_seq.currval, SYSDATE, 'N', p_no_tickets);
+    
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Wycieczka o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+**p_modify_reservation_status_6b**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_reservation_status_6b(
+    p_reservation_id IN reservation.reservation_id%TYPE,
+    p_status IN reservation.status%TYPE
+) AS
+    v_current_status reservation.status%TYPE;
+    v_trip_id trip.trip_id%TYPE;
+    v_no_tickets reservation.no_tickets%TYPE;
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+BEGIN
+    -- Pobranie bieżących danych rezerwacji
+    SELECT r.status, r.trip_id, r.no_tickets, t.trip_date, t.no_available_places
+    INTO v_current_status, v_trip_id, v_no_tickets, v_trip_date, v_available_places
+    FROM reservation r
+    JOIN trip t ON r.trip_id = t.trip_id
+    WHERE r.reservation_id = p_reservation_id;
+    
+    -- Sprawdzenie czy można zmienić status
+    IF v_current_status = p_status THEN
+        RETURN; -- Nic się nie zmienia, wyjście z procedury
+    END IF;
+    
+    -- Jeśli próbujemy zmienić status z anulowanego (C) na inny
+    IF v_current_status = 'C' AND (p_status = 'N' OR p_status = 'P') THEN
+        -- Sprawdzenie czy wycieczka się nie odbyła
+        IF v_trip_date < SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Nie można przywrócić rezerwacji na wycieczkę, która już się odbyła');
+        END IF;
+        
+        -- Sprawdzenie czy są dostępne miejsca
+        IF v_available_places < v_no_tickets THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+        END IF;
+    END IF;
+    
+    -- Aktualizacja statusu rezerwacji (triggery zajmą się aktualizacją no_available_places)
+    UPDATE reservation
+    SET status = p_status
+    WHERE reservation_id = p_reservation_id;
+    
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (p_reservation_id, SYSDATE, p_status, v_no_tickets);
+    
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Rezerwacja o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+**p_modify_reservation_6b**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_reservation_6b(
+    p_reservation_id IN reservation.reservation_id%TYPE,
+    p_no_tickets IN reservation.no_tickets%TYPE
+) AS
+    v_current_no_tickets reservation.no_tickets%TYPE;
+    v_status reservation.status%TYPE;
+    v_trip_id trip.trip_id%TYPE;
+    v_trip_date trip.trip_date%TYPE;
+    v_available_places trip.no_available_places%TYPE;
+    v_tickets_diff INT;
+BEGIN
+    -- Pobranie bieżących danych rezerwacji
+    SELECT r.no_tickets, r.status, r.trip_id, t.trip_date, t.no_available_places
+    INTO v_current_no_tickets, v_status, v_trip_id, v_trip_date, v_available_places
+    FROM reservation r
+    JOIN trip t ON r.trip_id = t.trip_id
+    WHERE r.reservation_id = p_reservation_id;
+    
+    -- Obliczenie różnicy w liczbie biletów
+    v_tickets_diff := p_no_tickets - v_current_no_tickets;
+    
+    -- Sprawdzenie czy rezerwacja nie jest anulowana
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Nie można modyfikować anulowanej rezerwacji');
+    END IF;
+    
+    -- Sprawdzenie czy wycieczka się nie odbyła
+    IF v_trip_date < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Nie można modyfikować rezerwacji na wycieczkę, która już się odbyła');
+    END IF;
+    
+    -- Jeśli zwiększamy liczbę biletów, sprawdzamy dostępność
+    IF v_tickets_diff > 0 AND v_available_places < v_tickets_diff THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Brak wystarczającej liczby miejsc na wycieczce');
+    END IF;
+    
+    -- Aktualizacja liczby biletów (triggery zajmą się aktualizacją no_available_places)
+    UPDATE reservation
+    SET no_tickets = p_no_tickets
+    WHERE reservation_id = p_reservation_id;
+    
+    -- Dodanie wpisu do logu
+    INSERT INTO log(reservation_id, log_date, status, no_tickets)
+    VALUES (p_reservation_id, SYSDATE, v_status, p_no_tickets);
+    
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Rezerwacja o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+**p_modify_max_no_places_6b**
+
+```sql
+CREATE OR REPLACE PROCEDURE p_modify_max_no_places_6b(
+    p_trip_id IN trip.trip_id%TYPE,
+    p_max_no_places IN trip.max_no_places%TYPE
+) AS
+BEGIN
+    -- Aktualizacja max_no_places (trigger zajmie się kontrolą i aktualizacją no_available_places)
+    UPDATE trip
+    SET max_no_places = p_max_no_places
+    WHERE trip_id = p_trip_id;
+    
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Wycieczka o podanym ID nie istnieje');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+```
+
+Przykład zmiany ilości miejsc dla wycieczki:
+![6a_ex_1](zad_6a_przyklad_1.png)
+
+Prykład dodania nowej rezerwacji:
+![6a_ex_2](zad_6a_przyklad_2.png)
+
+Przykład zmienienia liczby biletów dla tej rezerwacji:
+![6a_ex_3](zad_6a_przyklad_3.png)
+
+Przykład zmienienia statusu dla tej rezerwacji:
+![6a_ex_4](zad_6a_przyklad_4.png)
 
 # Zadanie 7 - podsumowanie
 
