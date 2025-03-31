@@ -14,7 +14,7 @@ Imiona i nazwiska autorów : Szymon Kłodowski, Adrian Krawczyk
 
 # Tabele
 
-![table](ora-trip1-0.png)
+![table](zad/ora-trip1-0.png)
 
 
 - `Trip`  - wycieczki
@@ -343,7 +343,7 @@ ROLLBACK;
 
 Zdjęcie pokazujące zmiany w bazie danych:
 
-![0_ex_1](zad_0_przyklad_1.png)
+![0_ex_1](img/zad_0_przyklad_1.png)
 
 
 **2. Zmiana statusu rezerwacji i zapis do loga**
@@ -360,7 +360,7 @@ COMMIT;
 ```
 Zdjęcie pokazujące zmiany w bazie danych:
 
-![0_ex_2](zad_0_przyklad_2.png)
+![0_ex_2](img/zad_0_przyklad_2.png)
 
 
 **3. Przykład wycofania transakcji w przypadku błędu (próba dodania więcej biletów niż dostępnych miejsc)**
@@ -390,7 +390,7 @@ END;
 ```
 Zdjęcie pokazujące zmiany w bazie danych:
 
-![0_ex_3](zad_0_przyklad_3.png)
+![0_ex_3](img/zad_0_przyklad_3.png)
 Wysoki indeks nowej rezerwacji spowodowany jest wcześniejszą próbą dodania przykładowych danych do tabeli, które się zdublowały niestety
 
 ### Transkacje - co i jak
@@ -443,7 +443,7 @@ commit;
 ```
 A rezultatem uruchomienia tego widoku jest:
 
-![1_ex_1](zad_1_przyklad_1.png)
+![1_ex_1](img/zad_1_przyklad_1.png)
 
 **Dla ```vw_trip```:**
 ```sql
@@ -458,7 +458,7 @@ commit;
 ```
 A rezultatem uruchomienia tego widoku jest:
 
-![1_ex_2](zad_1_przyklad_2.png)
+![1_ex_2](img/zad_1_przyklad_2.png)
 
 **Dla ```vw_available_trip```:**
 ```sql
@@ -472,7 +472,7 @@ commit;
 ```
 A rezultatem uruchomienia tego widoku jest:
 
-![1_ex_3](zad_1_przyklad_3.png)
+![1_ex_3](img/zad_1_przyklad_3.png)
 
 ---
 # Zadanie 2  - funkcje
@@ -527,7 +527,7 @@ end;
 ```
 A rezultatem uruchomienia tej funkcji dla trip_id = 1 jest:
 
-![2_ex_1](zad_2_przyklad_1.png)
+![2_ex_1](img/zad_2_przyklad_1.png)
 
 **f_person_reservations**
 
@@ -553,7 +553,7 @@ end;
 
 A rezultatem uruchomienia tej funkcji dla person_id = 1 jest:
 
-![2_ex_2](zad_2_przyklad_2.png)
+![2_ex_2](img/zad_2_przyklad_2.png)
 
 **f_available_trips_to**
 
@@ -579,7 +579,7 @@ end;
 
 A rezultatem uruchomienia tej funkcji dla country = 'Polska', date_from = 01-01-2025, date_to = 01-01-2026 jest:
 
-![2_ex_3](zad_2_przyklad_3.png)
+![2_ex_3](img/zad_2_przyklad_3.png)
 ---
 # Zadanie 3  - procedury
 
@@ -706,7 +706,7 @@ END p_add_reservation;
 
 Dodanie rezerwacji na wycieczkę o id = 3 przez osobę o id = 1 na 1 bilet skutkuje:
 
-![3_ex_1](zad_3_przyklad_1.png)
+![3_ex_1](img/zad_3_przyklad_1.png)
 
 
 **p_modify_reservation_status**
@@ -811,7 +811,7 @@ END p_modify_reservation_status;
 
 Procedura wykonana z id rezerwacji = 31 i statusem = 'P':
 
-![3_ex_2](zad_3_przyklad_2.png)
+![3_ex_2](img/zad_3_przyklad_2.png)
 
 
 **p_modify_reservation**
@@ -918,7 +918,7 @@ END p_modify_reservation;
 
 Procedura wykonana z id rezerwacji = 31 i numerem biletów = 2:
 
-![3_ex_3](zad_3_przyklad_3.png)
+![3_ex_3](img/zad_3_przyklad_3.png)
 
 
 **p_modify_max_no_places**
@@ -975,7 +975,7 @@ END p_modify_max_no_places;
 
 Procedura wykonana z id wycieczki = 3 i liczbą miejsc = 15:
 
-![3_ex_4](zad_3_przyklad_4.png)
+![3_ex_4](img/zad_3_przyklad_4.png)
 ---
 # Zadanie 4  - triggery
 
@@ -1253,16 +1253,16 @@ END;
 ```
 
 Gdy próbujemy usunąć rekord w rezerwacjach dostajemy błąd:
-![4_ex_1](zad_4_przyklad_1.png)
+![4_ex_1](img/zad_4_przyklad_1.png)
 
 Dodanie rezerwacji na wycieczkę o id = 3, przez osobę o id = 5 oraz liczbą biletów = 5:
-![4_ex_2](zad_4_przyklad_2.png)
+![4_ex_2](img/zad_4_przyklad_2.png)
 
 Modyfikacja statusu rezerwacji id = 51 na status = 'P':
-![4_ex_3](zad_4_przyklad_3.png)
+![4_ex_3](img/zad_4_przyklad_3.png)
 
 Modyfikacja liczby biletów na = 2 dla rezerwacji id = 51:
-![4_ex_4](zad_4_przyklad_4.png)
+![4_ex_4](img/zad_4_przyklad_4.png)
 
 ---
 # Zadanie 5  - triggery
@@ -1646,7 +1646,7 @@ AND no_available_places > 0;
 ```
 
 Nowy wygląd tabeli ```TRIPS``` po dodaniu kolumny ```no_available_places``` :
-![6_ex_1](zad_6_przyklad_1.png)
+![6_ex_1](img/zad_6_przyklad_1.png)
 
 ---
 # Zadanie 6a  - procedury
@@ -1895,16 +1895,16 @@ END;
 ```
 
 Prykład dodania nowej rezerwacji:
-![6a_ex_1](zad_6a_przyklad_1.png)
+![6a_ex_1](img/zad_6a_przyklad_1.png)
 
 Przykład zmienienia liczby biletów dla tej rezerwacji:
-![6a_ex_2](zad_6a_przyklad_2.png)
+![6a_ex_2](img/zad_6a_przyklad_2.png)
 
 Przykład zmienienia statusu dla tej rezerwacji:
-![6a_ex_3](zad_6a_przyklad_3.png)
+![6a_ex_3](img/zad_6a_przyklad_3.png)
 
 Przykład zmiany ilości miejsc dla wycieczki:
-![6a_ex_4](zad_6a_przyklad_4.png)
+![6a_ex_4](img/zad_6a_przyklad_4.png)
 
 ---
 # Zadanie 6b -  triggery
@@ -2216,23 +2216,57 @@ END;
 ```
 
 Przykład zmiany ilości miejsc dla wycieczki:
-![6a_ex_1](zad_6a_przyklad_1.png)
+![6a_ex_1](img/zad_6a_przyklad_1.png)
 
 Prykład dodania nowej rezerwacji:
-![6a_ex_2](zad_6a_przyklad_2.png)
+![6a_ex_2](img/zad_6a_przyklad_2.png)
 
 Przykład zmienienia liczby biletów dla tej rezerwacji:
-![6a_ex_3](zad_6a_przyklad_3.png)
+![6a_ex_3](img/zad_6a_przyklad_3.png)
 
 Przykład zmienienia statusu dla tej rezerwacji:
-![6a_ex_4](zad_6a_przyklad_4.png)
+![6a_ex_4](img/zad_6a_przyklad_4.png)
 
 # Zadanie 7 - podsumowanie
 
 Porównaj sposób programowania w systemie Oracle PL/SQL ze znanym ci systemem/językiem MS Sqlserver T-SQL
 
-```sql
+-- Zadanie 7 - podsumowanie: Porównanie Oracle PL/SQL i MS SQL Server T-SQL
 
--- komentarz ...
+-- Komentarz:
 
-```
+Oracle PL/SQL i Microsoft SQL Server T-SQL są do siebie dość podobne. Oba języki realizują podobne cele (procedury składowane, funkcje, wyzwalacze, zarządzanie transakcjami), ale istnieją między nimi znaczące różnice w składni, strukturze, obsłudze błędów i niektórych możliwościach.
+
+Oto porównanie kluczowych aspektów, bazując na doświadczeniach z ćwiczeń:
+
+1.  **Struktura Bloku Kodu:**
+    *   **PL/SQL:** Używa wyraźnej struktury blokowej `DECLARE ... BEGIN ... EXCEPTION ... END;`. Sekcja `DECLARE` jest obowiązkowa dla zmiennych lokalnych. Sekcja `EXCEPTION` służy do obsługi błędów.
+    *   **T-SQL:** Używa bloków `BEGIN ... END` do grupowania instrukcji, ale nie ma tak ścisłej struktury jak PL/SQL. Zmienne (`DECLARE @nazwa typ`) mogą być deklarowane w dowolnym miejscu przed pierwszym użyciem w danym zakresie (batchu/procedurze).
+
+2.  **Deklaracja i Przypisanie Zmiennych:**
+    *   **PL/SQL:** `zmienna TYP := wartosc;`. Szeroko wykorzystuje atrybuty `%TYPE` i `%ROWTYPE` do deklarowania zmiennych o typie zgodnym z kolumną lub wierszem tabeli, co ułatwia utrzymanie kodu przy zmianach schematu.
+    *   **T-SQL:** `DECLARE @zmienna TYP = wartosc;` lub `SET @zmienna = wartosc;`. Brak bezpośredniego odpowiednika `%TYPE`/`%ROWTYPE`, chociaż podobne efekty można osiągnąć inaczej (np. przez odczyt `sys.columns`).
+
+3.  **Obsługa Błędów:**
+    *   **PL/SQL:** Sekcja `EXCEPTION WHEN nazwa_bledu THEN ... WHEN OTHERS THEN ...`. Umożliwia obsługę konkretnych, nazwanych błędów (predefiniowanych lub własnych) oraz błędów nieprzewidzianych (`OTHERS`).
+    *   **T-SQL:** Bloki `BEGIN TRY ... END TRY BEGIN CATCH ... END CATCH;`. W bloku `CATCH` dostępne są funkcje systemowe (`ERROR_NUMBER()`, `ERROR_MESSAGE()`, `ERROR_PROCEDURE()`, etc.) do analizy błędu.
+
+4.  **Procedury i Funkcje:**
+    *   **PL/SQL:** Wyraźne rozróżnienie na `PROCEDURE` (nie zwraca wartości, ale może mieć parametry `OUT`/`IN OUT`) i `FUNCTION` (musi zwracać wartość przez `RETURN`). Zwracanie zbiorów wyników z procedur najczęściej odbywa się przez parametry typu `SYS_REFCURSOR` (wskaźnik do kursora). Funkcje mogą zwracać typy złożone (obiekty, kolekcje).
+    *   **T-SQL:** `PROCEDURE` (lub `PROC`) może zwracać wartości przez parametry `OUTPUT` oraz, co bardzo częste, zwracać jeden lub więcej zbiorów wyników po prostu przez wykonanie instrukcji `SELECT`. `FUNCTION` może być skalarna, tabelaryczna wbudowana (inline) lub wieloinstrukcyjna (multi-statement).
+
+5.  **Triggery:**
+    *   **PL/SQL:** Obsługuje wyzwalacze `BEFORE` i `AFTER` dla operacji DML, a także `INSTEAD OF` dla widoków. Mogą być definiowane na poziomie wiersza (`FOR EACH ROW`) lub instrukcji (domyślnie). W wyzwalaczach wierszowych dostępne są pseudorekordy `:OLD` i `:NEW`.
+    *   **T-SQL:** Obsługuje wyzwalacze `AFTER` (wykonywane po sprawdzeniu więzów integralności) i `INSTEAD OF`. Nie ma bezpośredniego odpowiednika wyzwalaczy `BEFORE`. Działają na poziomie instrukcji, a dostęp do wierszy wstawionych/usuniętych/zmodyfikowanych odbywa się przez specjalne tabele `inserted` i `deleted`.
+
+6.  **Zarządzanie Transakcjami:**
+    *   **PL/SQL:** Transakcje zazwyczaj zaczynają się niejawnie z pierwszą instrukcją DML w sesji. `COMMIT` zatwierdza transakcję, `ROLLBACK` ją wycofuje. Istnieją `SAVEPOINT`y. Instrukcje DDL (np. `CREATE TABLE`) często powodują niejawne zatwierdzenie (`implicit commit`).
+    *   **T-SQL:** Transakcje często rozpoczyna się jawnie przez `BEGIN TRANSACTION`. Zatwierdzenie przez `COMMIT TRANSACTION` (lub `COMMIT WORK`), wycofanie przez `ROLLBACK TRANSACTION` (lub `ROLLBACK WORK`). Istnieją `SAVE TRANSACTION`. Domyślnie błędy nie zawsze automatycznie wycofują całą transakcję (zachowanie można kontrolować przez `SET XACT_ABORT ON`).
+
+
+**Podsumowanie subiektywne:**
+
+*   **PL/SQL** wydaje się bardziej "formalny", ze ścisłą strukturą i bogatym zestawem wbudowanych pakietów do różnorodnych zadań. Mechanizmy takie jak `%TYPE`, `%ROWTYPE` czy pakiety są bardzo cenione w dużych projektach. Składnia może być czasem bardziej rozwlekła.
+*   **T-SQL** jest często postrzegany jako bardziej zwięzły w niektórych aspektach (np. zwracanie wyników przez `SELECT` w procedurach, obsługa błędów `TRY...CATCH`). Integracja z platformą .NET daje dodatkowe możliwości. Brak pakietów może być odczuwalny przy organizacji dużych ilości kodu.
+
+Oba języki są dojrzałe, potężne i pozwalają na implementację złożonej logiki w bazie danych. Wybór między nimi często zależy od wyboru platformy bazodanowej, istniejących kompetencji zespołu i specyficznych wymagań projektu. Doświadczenie zdobyte w jednym z tych języków znacznie ułatwia naukę drugiego, ponieważ podstawowe koncepcje programowania proceduralnego w SQL są wspólne.
