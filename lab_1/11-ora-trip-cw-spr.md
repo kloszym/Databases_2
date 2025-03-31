@@ -14,7 +14,7 @@ Imiona i nazwiska autorów : Szymon Kłodowski, Adrian Krawczyk
 
 # Tabele
 
-![table](zad/ora-trip1-0.png)
+![table](img/ora-trip1-0.png)
 
 
 - `Trip`  - wycieczki
